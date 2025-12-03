@@ -1,0 +1,55 @@
+server:
+  port: 3100
+
+spring:
+  application:
+    name: config-server
+
+  profiles:
+    active: git
+
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/sparta-next-me/project-configs
+          default-label: main
+          search-paths:
+            - configs/common
+            - configs/{application}/{profile}
+            - configs/{application}
+
+
+eureka:
+  instance:
+    prefer-ip-address: false
+    hostname: localhost
+
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:3150/eureka/
+
+#management:
+#  endpoints:
+#    web:
+#      exposure:
+#        include: refresh,health,info,prometheus,metrics
+#  endpoint:
+#    prometheus:
+#      enabled: true
+#    metrics:
+#      enabled: true
+#      export:
+#        prometheus:
+#          enabled: true
+#      tags:
+#        application: ${spring.application.name}
+#
+#  zipkin:
+#    tracing:
+#      endpoint: "http://13.210.162.214:9500/api/v2/spans"
+#  tracing:
+#    sampling:
+#      probability: 1.0
