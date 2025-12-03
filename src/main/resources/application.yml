@@ -22,14 +22,14 @@ spring:
 
 eureka:
   instance:
-    prefer-ip-address: false
-    hostname: localhost
+    prefer-ip-address: true
+    ip-address: 13.210.162.214
 
   client:
     register-with-eureka: true
     fetch-registry: true
     service-url:
-      defaultZone: http://localhost:3150/eureka/
+      defaultZone: http://13.210.162.214:3150/eureka/
 
 #management:
 #  endpoints:

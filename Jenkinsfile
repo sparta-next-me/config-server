@@ -18,11 +18,12 @@ pipeline {
             }
         }
 
-        stage('Build & Test') {
-            steps {
-                sh './gradlew clean test'
-            }
-        }
+         stage('Build & Test') {
+             steps {
+                 sh './gradlew clean test'
+                 sh './gradlew bootJar'
+             }
+         }
 
         stage('Docker Build') {
             steps {
