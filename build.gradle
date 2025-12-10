@@ -29,7 +29,8 @@ dependencies {
 	implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
 	implementation 'org.springframework.cloud:spring-cloud-config-server'
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
-	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
+    implementation 'com.github.loki4j:loki-logback-appender:2.0.0'
+    runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
