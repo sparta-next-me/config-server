@@ -31,25 +31,18 @@ eureka:
     service-url:
       defaultZone: http://13.210.162.214:3150/eureka/
 
-#management:
-#  endpoints:
-#    web:
-#      exposure:
-#        include: refresh,health,info,prometheus,metrics
-#  endpoint:
-#    prometheus:
-#      enabled: true
-#    metrics:
-#      enabled: true
-#      export:
-#        prometheus:
-#          enabled: true
-#      tags:
-#        application: ${spring.application.name}
-#
-#  zipkin:
-#    tracing:
-#      endpoint: "http://13.210.162.214:9500/api/v2/spans"
-#  tracing:
-#    sampling:
-#      probability: 1.0
+management:
+  endpoints:
+    web:
+      exposure:
+        include: refresh,health,info,prometheus,metrics
+  endpoint:
+    prometheus:
+      enabled: true
+    metrics:
+      enabled: true
+      export:
+        prometheus:
+          enabled: true
+      tags:
+        application: ${spring.application.name}
