@@ -127,7 +127,8 @@ pipeline {
 
             # 4) 결과 확인
             "$KUBECTL_BIN" -n "$NAMESPACE" get pods -l app=config-server -o wide
-            "$KUBECTL_BIN" -n "$NAMESPACE" get deploy "$DEPLOYMENT" -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
+            "$KUBECTL_BIN" -n "$NAMESPACE" get deploy "$DEPLOYMENT" -o jsonpath='{.spec.template.spec.containers[0].image}'
+            echo
           '''
         }
       }
