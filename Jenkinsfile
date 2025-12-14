@@ -19,6 +19,10 @@ pipeline {
 
     // kubectl을 /usr/local/bin 대신 워크스페이스에 설치 (권한 이슈 방지)
     KUBECTL_BIN = "${WORKSPACE}/kubectl"
+
+    // (수정) 매니페스트 실제 위치(레포 구조에 맞게)
+    // - 지금 레포는 k8s/ 디렉토리가 없고 루트에 config-server.yaml이 있음
+    MANIFEST_FILE = "config-server.yaml"
   }
 
   stages {
@@ -35,7 +39,7 @@ pipeline {
         // 테스트는 무조건 test 프로파일로 실행(외부: Eureka/Loki/Config Git clone 등 차단)
         sh '''
           set -e
-          ./gradlew clean test --no-daemon
+          ./gradlew clean test --no-daemon -Dspring.profiles.active="$TEST_PROFILE"
           ./gradlew bootJar --no-daemon
         '''
       }
@@ -107,9 +111,12 @@ pipeline {
             set -e
             export KUBECONFIG="$KUBECONFIG_FILE"
 
+            # 0) 매니페스트 경로 검증(경로 틀리면 여기서 바로 실패)
+            test -f "$MANIFEST_FILE"
+
             # 1) 매니페스트 적용 (Deployment/Service 존재 보장)
-            #   - k8s/config-server.yaml 안에 namespace가 이미 있으면 -n은 생략하는 게 깔끔
-            "$KUBECTL_BIN" apply -f k8s/config-server.yaml
+            #   - 매니페스트에 namespace가 이미 있으면 -n은 생략하는 게 깔끔
+            "$KUBECTL_BIN" apply -f "$MANIFEST_FILE" -n "$NAMESPACE"
 
             # 2) 실제 배포 이미지를 SHA 태그로 고정 업데이트 (최신 반영 가장 확실)
             "$KUBECTL_BIN" -n "$NAMESPACE" set image deployment/"$DEPLOYMENT" \
