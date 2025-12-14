@@ -18,4 +18,5 @@ eureka:
     register-with-eureka: true
     fetch-registry: true
     service-url:
+      # 로컬 PC에서 접속이니까 노드 퍼블릭IP + NodePort
       defaultZone: http://34.50.7.8:30150/eureka/

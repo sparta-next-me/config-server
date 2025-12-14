@@ -18,4 +18,5 @@ eureka:
     register-with-eureka: true
     fetch-registry: true
     service-url:
+      # k8s 내부에서는 Service DNS 사용
       defaultZone: http://eureka-server:3150/eureka/

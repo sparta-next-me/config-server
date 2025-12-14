@@ -1,13 +1,5 @@
-# 테스트에서 외부 시스템 붙지 않게 차단하는 것이 핵심
-
-eureka:
-  client:
-    enabled: false
-
 spring:
   cloud:
     config:
-      enabled: false
       server:
-        git:
-          clone-on-start: false
+        enabled: false
