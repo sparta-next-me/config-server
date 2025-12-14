@@ -35,7 +35,7 @@ pipeline {
         // 테스트는 무조건 test 프로파일로 실행(외부: Eureka/Loki/Config Git clone 등 차단)
         sh '''
           set -e
-          ./gradlew clean test --no-daemon -Dspring.profiles.active=$TEST_PROFILE
+          ./gradlew clean test --no-daemon
           ./gradlew bootJar --no-daemon
         '''
       }

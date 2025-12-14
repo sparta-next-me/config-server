@@ -42,5 +42,9 @@ dependencyManagement {
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+    useJUnitPlatform()
+
+    // 테스트 JVM에 확실히 전달
+    systemProperty 'spring.profiles.active', 'test'
+    systemProperty 'spring.cloud.config.server.enabled', 'false'
 }
