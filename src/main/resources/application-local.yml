@@ -1,0 +1,21 @@
+spring:
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/sparta-next-me/project-configs
+          default-label: main
+          search-paths:
+            - configs/common
+            - configs/{application}/{profile}
+            - configs/{application}
+          clone-on-start: true
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://34.50.7.8:30150/eureka/
