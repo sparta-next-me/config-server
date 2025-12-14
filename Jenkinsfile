@@ -11,9 +11,14 @@ pipeline {
     NAMESPACE  = "next-me"
     DEPLOYMENT = "config-server"
 
-    // Jenkins Credentials에 등록해둔 kubeconfig 파일(ID)
-    // (eureka에서 쓰던 방식과 동일)
+    // kubeconfig Jenkins Credentials(file) ID
     KUBECONFIG_CRED_ID = "k3s-kubeconfig"
+
+    // (권장) CI 테스트는 외부 의존 끊기 위해 test 프로파일 강제
+    TEST_PROFILE = "test"
+
+    // kubectl을 /usr/local/bin 대신 워크스페이스에 설치 (권한 이슈 방지)
+    KUBECTL_BIN = "${WORKSPACE}/kubectl"
   }
 
   stages {
@@ -27,10 +32,10 @@ pipeline {
 
     stage('Build & Test') {
       steps {
-        // Gradle 테스트 + Jar 빌드
+        // 테스트는 무조건 test 프로파일로 실행(외부: Eureka/Loki/Config Git clone 등 차단)
         sh '''
           set -e
-          ./gradlew clean test --no-daemon
+          ./gradlew clean test --no-daemon -Dspring.profiles.active=$TEST_PROFILE
           ./gradlew bootJar --no-daemon
         '''
       }
@@ -43,12 +48,11 @@ pipeline {
           def sha = sh(script: "git rev-parse --short=12 HEAD", returnStdout: true).trim()
           env.IMAGE_TAG = sha
 
-          // 실제로 푸시할 이미지 풀네임들
-          env.IMAGE_SHA   = "${REGISTRY}/${GH_OWNER}/${IMAGE_REPO}:${env.IMAGE_TAG}"
-          env.IMAGE_LATEST= "${REGISTRY}/${GH_OWNER}/${IMAGE_REPO}:latest"
+          // 실제 푸시/배포에 사용할 이미지 풀네임
+          env.IMAGE_SHA    = "${REGISTRY}/${GH_OWNER}/${IMAGE_REPO}:${env.IMAGE_TAG}"
+          env.IMAGE_LATEST = "${REGISTRY}/${GH_OWNER}/${IMAGE_REPO}:latest"
         }
 
-        // 어떤 태그로 빌드/배포하는지 로그로 남김
         echo "IMAGE_SHA=${env.IMAGE_SHA}"
         echo "IMAGE_LATEST=${env.IMAGE_LATEST}"
       }
@@ -56,7 +60,7 @@ pipeline {
 
     stage('Docker Build') {
       steps {
-        // 이미지 빌드: SHA 태그로 생성 + 최신 편의용으로 latest도 같이 태그
+        // 이미지 빌드: SHA 태그로 생성 + 편의용 latest 태그도 함께 지정
         sh '''
           set -e
           docker build -t "$IMAGE_SHA" .
@@ -74,7 +78,7 @@ pipeline {
             passwordVariable: 'REGISTRY_TOKEN'
           )
         ]) {
-          // GHCR 로그인 후 두 태그(SHA, latest) 모두 푸시
+          // GHCR 로그인 후 SHA/Latest 둘 다 푸시
           sh '''
             set -e
             echo "$REGISTRY_TOKEN" | docker login ghcr.io -u "$REGISTRY_USER" --password-stdin
@@ -87,36 +91,36 @@ pipeline {
 
     stage('Deploy to k3s') {
       steps {
-        // kubectl이 없으면 설치(환경에 따라 권한 문제 있을 수 있음)
+        // kubectl 설치 (권한 문제 피하려고 WORKSPACE에 설치)
         sh '''
           set -e
-          if ! command -v kubectl >/dev/null 2>&1; then
-            echo "kubectl not found. installing..."
-            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-            chmod +x kubectl
-            mv kubectl /usr/local/bin/kubectl
+          if [ ! -x "$KUBECTL_BIN" ]; then
+            echo "kubectl not found in workspace. installing..."
+            curl -sSL -o "$KUBECTL_BIN" "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+            chmod +x "$KUBECTL_BIN"
           fi
         '''
 
-        // kubeconfig 파일을 Jenkins Credentials에서 꺼내서 kubectl이 사용하게 함
+        // kubeconfig 파일을 Jenkins Credentials에서 꺼내 kubectl이 사용하도록 설정
         withCredentials([file(credentialsId: "${KUBECONFIG_CRED_ID}", variable: 'KUBECONFIG_FILE')]) {
           sh '''
             set -e
             export KUBECONFIG="$KUBECONFIG_FILE"
 
-            # 1) 매니페스트 적용(Deployment/Service 등 존재 보장)
-            kubectl apply -f k8s/config-server.yaml -n "$NAMESPACE"
+            # 1) 매니페스트 적용 (Deployment/Service 존재 보장)
+            #   - k8s/config-server.yaml 안에 namespace가 이미 있으면 -n은 생략하는 게 깔끔
+            "$KUBECTL_BIN" apply -f k8s/config-server.yaml
 
-            # 2) 배포 이미지 "문자열 자체"를 SHA 태그로 업데이트 (최신 반영을 가장 확실하게 보장)
-            kubectl -n "$NAMESPACE" set image deployment/"$DEPLOYMENT" \
-              config-server="$IMAGE_SHA" --record
+            # 2) 실제 배포 이미지를 SHA 태그로 고정 업데이트 (최신 반영 가장 확실)
+            "$KUBECTL_BIN" -n "$NAMESPACE" set image deployment/"$DEPLOYMENT" \
+              config-server="$IMAGE_SHA"
 
-            # 3) 롤아웃 완료까지 대기 (실패하면 파이프라인도 실패하도록 둠)
-            kubectl -n "$NAMESPACE" rollout status deployment/"$DEPLOYMENT" --timeout=180s
+            # 3) 롤아웃 완료까지 대기
+            "$KUBECTL_BIN" -n "$NAMESPACE" rollout status deployment/"$DEPLOYMENT" --timeout=180s
 
-            # 4) 결과 확인 로그
-            kubectl -n "$NAMESPACE" get pods -l app=config-server -o wide
-            kubectl -n "$NAMESPACE" describe deploy/"$DEPLOYMENT" | egrep "Image:|Image Pull Policy:" || true
+            # 4) 결과 확인
+            "$KUBECTL_BIN" -n "$NAMESPACE" get pods -l app=config-server -o wide
+            "$KUBECTL_BIN" -n "$NAMESPACE" get deploy "$DEPLOYMENT" -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
           '''
         }
       }
