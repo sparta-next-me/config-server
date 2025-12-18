@@ -64,10 +64,12 @@ pipeline {
                     echo "Stopping existing container..."
                     docker stop ${CONTAINER_NAME} || true
                     docker rm ${CONTAINER_NAME} || true
+                    docker rmi ${FULL_IMAGE} || true
                   fi
 
                   echo "Starting new container..."
                   docker run -d --name ${CONTAINER_NAME} \\
+                    -e EUREKA_INSTANCE_HOSTNAME='10.178.0.4' \\
                     -p ${HOST_PORT}:${CONTAINER_PORT} \\
                     -e SPRING_PROFILES_ACTIVE=prod \\
                     ${FULL_IMAGE}
