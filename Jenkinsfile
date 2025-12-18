@@ -69,7 +69,7 @@ pipeline {
 
                   echo "Starting new container..."
                   docker run -d --name ${CONTAINER_NAME} \\
-                    -e EUREKA_INSTANCE_HOSTNAME='10.178.0.4' \\
+                    -e EUREKA_INSTANCE_HOSTNAME='34.50.7.8' \\
                     -p ${HOST_PORT}:${CONTAINER_PORT} \\
                     -e SPRING_PROFILES_ACTIVE=prod \\
                     ${FULL_IMAGE}
