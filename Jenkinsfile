@@ -69,6 +69,7 @@ pipeline {
                   echo "Starting new container..."
                   docker run -d --name ${CONTAINER_NAME} \\
                     -p ${HOST_PORT}:${CONTAINER_PORT} \\
+                    -e SPRING_PROFILES_ACTIVE=prod \\
                     ${FULL_IMAGE}
                 """
             }
