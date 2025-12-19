@@ -18,5 +18,5 @@ eureka:
     register-with-eureka: true
     fetch-registry: true
     service-url:
-      # k8s 내부에서는 Service DNS 사용
-      defaultZone: http://34.50.7.8:3150/eureka/
+      # [수정] 외부 IP 대신 쿠버네티스 내부 Service DNS 주소 사용
+      defaultZone: http://eureka-server.next-me.svc.cluster.local:3151/eureka/
